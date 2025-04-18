@@ -2,29 +2,13 @@ import random
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1, max_weight=10):
-    G = nx.DiGraph() if directed else nx.Graph()
-    for i in range(num_nodes):
-        G.add_node(i)
-    for i in range(num_nodes):
-        for j in range(num_nodes):
-            if i != j and random.random() < edge_prob:
-                if weighted:
-                    weight = random.randint(min_weight, max_weight)
-                    G.add_edge(i, j, weight=weight)
-                else:
-                    G.add_edge(i, j)
-    return G
+from graph_core import generate_random_graph, graph_from_adjacency
+from graph_drawing import graph_figure
 
 def draw_graph(G):
-    pos = nx.spring_layout(G)
-    if nx.get_edge_attributes(G, 'weight'):
-        labels = nx.get_edge_attributes(G, 'weight')
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
-    else:
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
+    figure = graph_figure(G)
     plt.show()
+    plt.close(figure)
 
 def print_adjacency_matrix(G):
     adj_matrix = nx.adjacency_matrix(G).todense()
@@ -54,18 +38,9 @@ def handle_user_defined_graph():
     weighted = input("Should the graph be weighted? (yes/no): ").strip().lower() == "yes"
     num_nodes = int(input("Enter the number of nodes: "))
 
-    G = nx.DiGraph() if directed else nx.Graph()
-    G.add_nodes_from(range(num_nodes))
-
-    print("Enter the adjacency matrix row by row (space-separated values):")
-    for i in range(num_nodes):
-        row = list(map(float, input(f"Row {i + 1}: ").strip().split()))
-        for j, weight in enumerate(row):
-            if weight != 0:
-                if weighted:
-                    G.add_edge(i, j, weight=weight)
-                else:
-                    G.add_edge(i, j)
+    print('Enter the square adjacency matrix row by row (space-separated values):')
+    rows = [list(map(float, input(f'Row {i+1}: ').split())) for i in range(num_nodes)]
+    G = graph_from_adjacency(rows, directed, weighted)
 
     print("\n--- Adjacency Matrix ---")
     print_adjacency_matrix(G)
