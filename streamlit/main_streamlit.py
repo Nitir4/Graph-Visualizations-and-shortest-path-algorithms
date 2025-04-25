@@ -1,22 +1,82 @@
 import streamlit as st
-from graph_generator_streamlit import handle_random_graph
-from shortest_paths_streamlit import find_shortest_path_improved_dijkstra
-from comparison_streamlit import calculate_and_display
+import networkx as nx
 
-def main():
-    st.title("Graph Generator and Shortest Path Finder")
-    
-    graph_choice = st.radio("Do you want a random or user-defined graph?", ["random", "exit"])
+def select_shortest_path_algorithm_streamlit(G, improved_dijkstra):
+    """
+    Streamlit version of the algorithm selector.
+    """
+    algo_options = [
+        "Dijkstra's Algorithm",
+        "Improved Dijkstra's Algorithm",
+        "Bellman-Ford Algorithm",
+        "Floyd-Warshall Algorithm (All Pairs)",
+        "Compare All Algorithms"
+    ]
+    algo_choice = st.selectbox("Choose a shortest path algorithm:", algo_options)
 
-    if graph_choice == "random":
-        G = handle_random_graph()
-        st.subheader("Choose an Algorithm to Find the Shortest Path:")
-        algo_choice = st.selectbox("Choose an algorithm", ["Improved Dijkstra's Algorithm"])
+    source = st.number_input("Source node", min_value=0, max_value=len(G.nodes) - 1, value=0)
+    target = st.number_input("Target node", min_value=0, max_value=len(G.nodes) - 1, value=len(G.nodes) - 1)
 
-        if algo_choice == "Improved Dijkstra's Algorithm":
-            find_shortest_path_improved_dijkstra(G)
-    else:
-        st.write("Exiting the application.")
+    if st.button("Run Algorithm"):
+        if not nx.has_path(G, source, target):
+            st.error(f"No path exists between node {source} and node {target}.")
+            return
 
+        if algo_choice == "Dijkstra's Algorithm":
+            path = nx.dijkstra_path(G, source, target, weight='weight')
+            st.success(f"Dijkstra's Path: {path}")
+        elif algo_choice == "Improved Dijkstra's Algorithm":
+            path = improved_dijkstra(G, source, target)
+            st.success(f"Improved Dijkstra's Path: {path}")
+        elif algo_choice == "Bellman-Ford Algorithm":
+            path_dict = nx.single_source_bellman_ford_path(G, source, weight='weight')
+            path = path_dict.get(target)
+            if path:
+                st.success(f"Bellman-Ford Path: {path}")
+            else:
+                st.error("No path found using Bellman-Ford.")
+        elif algo_choice == "Floyd-Warshall Algorithm (All Pairs)":
+            pred, dist = nx.floyd_warshall_predecessor_and_distance(G, weight='weight')
+            path = []
+            u = target
+            while u != source:
+                path.insert(0, u)
+                u = pred[source].get(u)
+                if u is None:
+                    st.error("No path found using Floyd-Warshall.")
+                    return
+            path.insert(0, source)
+            st.success(f"Floyd-Warshall Path: {path}")
+        elif algo_choice == "Compare All Algorithms":
+            from your_module import compare_algorithms_streamlit
+            compare_algorithms_streamlit(G, improved_dijkstra)
+
+def main_streamlit(improved_dijkstra):
+    """
+    Streamlit main app for graph creation and algorithm selection.
+    """
+    st.title("📈 Graph Shortest Path Visualizer")
+
+    mode = st.radio("Choose Graph Mode", ["Random", "User-defined"])
+
+    G = None
+    if mode == "Random":
+        num_nodes = st.slider("Number of Nodes", min_value=2, max_value=20, value=5)
+        prob = st.slider("Edge Probability", min_value=0.1, max_value=1.0, step=0.1, value=0.5)
+        weighted = st.checkbox("Make it Weighted", value=True)
+
+        if st.button("Generate Random Graph"):
+            G = nx.erdos_renyi_graph(n=num_nodes, p=prob, directed=True)
+            if weighted:
+                for u, v in G.edges():
+                    G[u][v]['weight'] = st.session_state.get("weight_function", lambda: random.randint(1, 10))()
+            st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
+
+    elif mode == "User-defined":
+        st.warning("User-defined input not implemented in this version. (Want help building it?)")
+
+    if G:
+        st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
+        select_shortest_path_algorithm_streamlit(G, improved_dijkstra)
 if __name__ == "__main__":
     main()
