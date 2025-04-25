@@ -178,6 +178,7 @@ def select_shortest_path_algorithm():
         find_shortest_path_floyd_warshall(st.session_state.graph)
 
 def main():
+    # Initialize session state for graph if not already done
     if 'graph' not in st.session_state:
         st.session_state.graph = None
 
@@ -185,12 +186,11 @@ def main():
     
     graph_choice = st.radio("Do you want a random or user-defined graph?", ("random", "user-defined"))
 
-    if graph_choice == "random":
-        if not st.session_state.graph:
-            st.session_state.graph = handle_random_graph()
-    elif graph_choice == "user-defined":
-        if not st.session_state.graph:
-            st.session_state.graph = handle_user_defined_graph()
+    # Only generate the graph if it doesn't exist already in session_state
+    if graph_choice == "random" and st.session_state.graph is None:
+        st.session_state.graph = handle_random_graph()
+    elif graph_choice == "user-defined" and st.session_state.graph is None:
+        st.session_state.graph = handle_user_defined_graph()
 
     select_shortest_path_algorithm()
 
