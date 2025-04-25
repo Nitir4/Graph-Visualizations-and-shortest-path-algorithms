@@ -3,7 +3,6 @@ import time
 import networkx as nx
 import matplotlib.pyplot as plt
 import heapq
-import math
 import streamlit as st
 
 # Graph generation functions
