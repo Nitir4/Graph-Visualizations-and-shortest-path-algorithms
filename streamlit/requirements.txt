@@ -2,3 +2,5 @@ streamlit
 networkx 
 matplotlib
 scipy
+pydot
+graphviz
