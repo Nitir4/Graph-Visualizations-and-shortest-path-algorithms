@@ -4,7 +4,12 @@ import streamlit as st
 
 def measure_execution_time(func, *args, **kwargs):
     start_time = time.time()
-    result = func(*args, **kwargs)
+    try:
+        result = func(*args, **kwargs)
+    except Exception as e:
+        print(f"Error in function execution: {e}")
+        return None, None  # Return None for both result and elapsed time in case of error
+    
     elapsed_time = time.time() - start_time
     return result, elapsed_time
 
@@ -28,15 +33,20 @@ def compare_algorithms(G, algo_choice, source, target):
     print(f"Source Node: {source}, Target Node: {target}")
     
     # Measure execution time and check result
-    try:
-        result, elapsed_time = measure_execution_time(execute_shortest_path_algorithm, G, algo_choice, source, target)
-        print(f"Result: {result}")
-        V = len(G.nodes())
-        E = len(G.edges())
+    result, elapsed_time = measure_execution_time(execute_shortest_path_algorithm, G, algo_choice, source, target)
     
-        theoretical_time = calculate_theoretical_time(V, E, algo_choice)
-        return result, elapsed_time, theoretical_time
-    except Exception as e:
-        print(f"Error during algorithm execution: {e}")
+    # Debugging output
+    print(f"Result: {result}")
+    print(f"Elapsed Time: {elapsed_time}")
+    
+    # Check if the result or elapsed_time are None
+    if result is None or elapsed_time is None:
+        print("Error: result or elapsed_time is None")
         return None, None, None
+    
+    V = len(G.nodes())
+    E = len(G.edges())
+    theoretical_time = calculate_theoretical_time(V, E, algo_choice)
+    return result, elapsed_time, theoretical_time
+
 
