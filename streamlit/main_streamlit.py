@@ -1,7 +1,7 @@
 import streamlit as st
-from graph_generation_streamlit import handle_random_graph, handle_user_defined_graph, display_graph_and_adjacency
-from shortest_path_streamlit import execute_shortest_path_algorithm
-from comparison_streamlit import compare_algorithms
+import graph_generation_streamlit
+import shortest_path_streamlit
+import comparison_streamlit
 
 def main():
     st.title("Graph Generator and Shortest Path Finder")
