@@ -51,6 +51,10 @@ def main_streamlit():
     """
     st.title("📈 Graph Shortest Path Visualizer")
 
+    # Keep track of graph in session state to avoid reset on interaction
+    if 'G' not in st.session_state:
+        st.session_state.G = None
+
     mode = st.radio("Choose Graph Mode", ["Random", "User-defined"])
 
     G = None
@@ -67,7 +71,10 @@ def main_streamlit():
                     G[u][v]['weight'] = random.randint(1, 10)
             st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
-            # Display Adjacency Matrix
+            # Store graph in session state
+            st.session_state.G = G
+
+            # Display Adjacency Matrix using to_numpy_array
             adj_matrix = nx.to_numpy_array(G)
             st.write("Adjacency Matrix:")
             st.dataframe(pd.DataFrame(adj_matrix))
@@ -75,7 +82,9 @@ def main_streamlit():
     elif mode == "User-defined":
         st.warning("User-defined input not implemented in this version. (Want help building it?)")
 
-    if G:
+    # Only display the graph and algorithm selection if the graph exists
+    if st.session_state.G:
+        G = st.session_state.G
         st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
         select_shortest_path_algorithm_streamlit(G)
 
