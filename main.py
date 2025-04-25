@@ -1,84 +1,32 @@
-import streamlit as st
-import networkx as nx
-
-def select_shortest_path_algorithm_streamlit(G, improved_dijkstra):
+def select_shortest_path_algorithm(G):
     """
-    Streamlit version of the algorithm selector.
+    Presents a menu to the user to choose a shortest path algorithm.
     """
-    algo_options = [
-        "Dijkstra's Algorithm",
-        "Improved Dijkstra's Algorithm",
-        "Bellman-Ford Algorithm",
-        "Floyd-Warshall Algorithm (All Pairs)",
-        "Compare All Algorithms"
-    ]
-    algo_choice = st.selectbox("Choose a shortest path algorithm:", algo_options)
+    while True:
+        print("\n--- Shortest Path Algorithm Menu ---")
+        print("1. Dijkstra's Algorithm")
+        print("2. Improved Dijkstra's Algorithm")
+        print("3. Bellman-Ford Algorithm")
+        print("4. Floyd-Warshall Algorithm (all pairs)")
+        print("5. Compare All Algorithms (time and results)")
+        print("6. Exit")
 
-    source = st.number_input("Source node", min_value=0, max_value=len(G.nodes) - 1, value=0)
-    target = st.number_input("Target node", min_value=0, max_value=len(G.nodes) - 1, value=len(G.nodes) - 1)
+        choice = int(input("Enter your choice (1-6): "))
 
-    if st.button("Run Algorithm"):
-        if not nx.has_path(G, source, target):
-            st.error(f"No path exists between node {source} and node {target}.")
-            return
-
-        if algo_choice == "Dijkstra's Algorithm":
-            path = nx.dijkstra_path(G, source, target, weight='weight')
-            st.success(f"Dijkstra's Path: {path}")
-        elif algo_choice == "Improved Dijkstra's Algorithm":
-            path = improved_dijkstra(G, source, target)
-            st.success(f"Improved Dijkstra's Path: {path}")
-        elif algo_choice == "Bellman-Ford Algorithm":
-            path_dict = nx.single_source_bellman_ford_path(G, source, weight='weight')
-            path = path_dict.get(target)
-            if path:
-                st.success(f"Bellman-Ford Path: {path}")
-            else:
-                st.error("No path found using Bellman-Ford.")
-        elif algo_choice == "Floyd-Warshall Algorithm (All Pairs)":
-            pred, dist = nx.floyd_warshall_predecessor_and_distance(G, weight='weight')
-            path = []
-            u = target
-            while u != source:
-                path.insert(0, u)
-                u = pred[source].get(u)
-                if u is None:
-                    st.error("No path found using Floyd-Warshall.")
-                    return
-            path.insert(0, source)
-            st.success(f"Floyd-Warshall Path: {path}")
-        elif algo_choice == "Compare All Algorithms":
-            from your_module import compare_algorithms_streamlit
-            compare_algorithms_streamlit(G, improved_dijkstra)
-
-def main_streamlit(improved_dijkstra):
-    """
-    Streamlit main app for graph creation and algorithm selection.
-    """
-    st.title("📈 Graph Shortest Path Visualizer")
-
-    mode = st.radio("Choose Graph Mode", ["Random", "User-defined"])
-
-    G = None
-    if mode == "Random":
-        num_nodes = st.slider("Number of Nodes", min_value=2, max_value=20, value=5)
-        prob = st.slider("Edge Probability", min_value=0.1, max_value=1.0, step=0.1, value=0.5)
-        weighted = st.checkbox("Make it Weighted", value=True)
-
-        if st.button("Generate Random Graph"):
-            G = nx.erdos_renyi_graph(n=num_nodes, p=prob, directed=True)
-            if weighted:
-                for u, v in G.edges():
-                    G[u][v]['weight'] = st.session_state.get("weight_function", lambda: random.randint(1, 10))()
-            st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
-
-    elif mode == "User-defined":
-        st.warning("User-defined input not implemented in this version. (Want help building it?)")
-
-    if G:
-        st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
-        select_shortest_path_algorithm_streamlit(G, improved_dijkstra)
-
+        if choice == 1:
+            find_shortest_path_dijkstra(G)
+        elif choice == 2:
+            find_shortest_path_improved_dijkstra(G)
+        elif choice == 3:
+            find_shortest_path_bellman_ford(G)
+        elif choice == 4:
+            find_shortest_path_floyd_warshall(G)
+        elif choice == 5:
+            compare_algorithms(G)
+        elif choice == 6:
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
 def main():
     """
