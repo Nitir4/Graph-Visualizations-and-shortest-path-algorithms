@@ -4,6 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import heapq
 import streamlit as st
+import pandas as pd
 
 st.set_page_config(layout="wide")
 
@@ -20,11 +21,11 @@ def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_w, max_w
 
 def draw_graph(G):
     plt.clf()
-    pos = nx.spring_layout(G)
+    # use a fixed seed so layout doesn’t change
+    pos = nx.spring_layout(G, seed=42)
     nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray")
     if nx.get_edge_attributes(G,'weight'):
-        nx.draw_networkx_edge_labels(G, pos,
-            edge_labels=nx.get_edge_attributes(G,'weight'))
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G,'weight'))
     st.pyplot(plt)
 
 def show_adjacency(G):
@@ -62,7 +63,9 @@ def safe_bellman(G,s,t):
 
 def safe_floyd(G,s,t):
     dist, tm = measure(nx.floyd_warshall, G, weight='weight')
-    return dist, tm
+    # convert to plain dict-of-dicts
+    plain = {u: dict(dist[u]) for u in dist}
+    return plain, tm
 
 def improved_dijkstra(G, source, target):
     pq = [(0, source)]
@@ -79,8 +82,7 @@ def improved_dijkstra(G, source, target):
                 dist[v]=nd
                 prev[v]=u
                 heapq.heappush(pq,(nd,v))
-    path=[]
-    u=target
+    path=[]; u=target
     while u is not None:
         path.append(u)
         u=prev[u]
@@ -93,8 +95,8 @@ def main():
     if 'G' not in st.session_state:
         st.session_state.G = None
 
-    # Sidebar: graph creation
     with st.sidebar:
+        st.header("Graph Controls")
         kind = st.radio("Graph type", ["Random", "User-Defined"])
         if kind=="Random":
             n = st.number_input("Nodes",1,100,5)
@@ -111,7 +113,7 @@ def main():
         else:
             directed = st.checkbox("Directed")
             weighted = st.checkbox("Weighted")
-            text = st.text_area("Adjacency matrix, rows of space-sep weights")
+            text = st.text_area("Adjacency matrix rows (space-sep)")
             if st.button("Load Graph"):
                 mat=[list(map(float,row.split())) for row in text.splitlines() if row]
                 G=nx.DiGraph() if directed else nx.Graph()
@@ -124,7 +126,6 @@ def main():
 
     G=st.session_state.G
 
-    # Display
     if G:
         c1,c2=st.columns(2)
         with c1:
@@ -141,21 +142,22 @@ def main():
         if st.button("Run"):
             if algo=="Dijkstra":
                 path,length,tm=safe_dijkstra(G,s,t)
-                if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
-                else: st.error("No path")
+                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
             elif algo=="Improved":
                 path,length,tm=safe_improved(G,s,t)
-                if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
-                else: st.error("No path")
+                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
             elif algo=="Bellman-Ford":
                 path,length,tm=safe_bellman(G,s,t)
-                if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
-                else: st.error("No path")
+                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
             elif algo=="Floyd-Warshall":
                 dist,tm=safe_floyd(G,s,t)
-                st.write(f"Distances:\n{dist}\nTime={tm:.6f}s")
+                # show as dataframe
+                df = pd.DataFrame(dist).astype(int)
+                st.write("All-pairs distances:")
+                st.dataframe(df)
+                st.write(f"Time={tm:.6f}s")
             else:
-                st.write("### Compare All")
+                st.write("## Compare All")
                 for name,fn in [("Dijkstra",safe_dijkstra),
                                ("Improved",safe_improved),
                                ("Bellman-Ford",safe_bellman),
