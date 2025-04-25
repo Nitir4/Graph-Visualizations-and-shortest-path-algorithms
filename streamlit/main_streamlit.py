@@ -45,7 +45,8 @@ def improved_dijkstra(G, source, target):
     prev = {n: None for n in G.nodes()}
     while pq:
         d, u = heapq.heappop(pq)
-        if u == target: break
+        if u == target:
+            break
         for v, attr in G[u].items():
             w = attr.get("weight", 1)
             nd = d + w
@@ -179,15 +180,17 @@ def main():
                             st.write(f"{u}→{v}: {p}")
                     st.write(f"Time={tm:.6f}s")
                 else:  # Compare All
+                    d_path, d_len, d_tm = safe_dijkstra(G, s, t)
+                    i_path, i_len, i_tm = safe_improved(G, s, t)
+                    b_path, b_len, b_tm = safe_bellman(G, s, t)
+                    paths, dist, f_tm = safe_floyd(G)
+                    f_path = paths[s][t]
+                    f_len = dist[s][t]
                     st.write("### Compare All Algorithms")
-                    d = safe_dijkstra(G, s, t)
-                    i = safe_improved(G, s, t)
-                    b = safe_bellman(G, s, t)
-                    f_path, f_len, f_tm = safe_floyd(G)[0][s][t], safe_floyd(G)[1][s][t], safe_floyd(G)[2]
-                    st.write(f"Dijkstra: Time={d[2]:.6f}s Path={d[0]} Len={d[1]}")
-                    st.write(f"Improved: Time={i[2]:.6f}s Path={i[0]} Len={i[1]}")
-                    st.write(f"Bellman-Ford: Time={b[2]:.6f}s Path={b[0]} Len={b[1]}")
-                    st.write(f"Floyd-Warshall: Time={f_tm:.6f}s Path={f_path} Len={f_len}")
+                    st.write(f"Dijkstra: Path={d_path}, Len={d_len}, Time={d_tm:.6f}s")
+                    st.write(f"Improved Dijkstra: Path={i_path}, Len={i_len}, Time={i_tm:.6f}s")
+                    st.write(f"Bellman-Ford: Path={b_path}, Len={b_len}, Time={b_tm:.6f}s")
+                    st.write(f"Floyd-Warshall: Path={f_path}, Len={f_len}, Time={f_tm:.6f}s")
     else:
         st.info("Generate or load a graph first.")
 
