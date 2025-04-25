@@ -1,100 +1,73 @@
-def measure_execution_time(func, *args, **kwargs):
-    """
-    Measures execution time of a function call.
-    """
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    elapsed_time = time.time() - start_time
-    return result, elapsed_time
+import random
+import networkx as nx
+import matplotlib.pyplot as plt
 
-def calculate_theoretical_time(V, E, algo_name):
-    """
-    Estimates theoretical number of operations for various algorithms.
-    """
-    if algo_name == "Dijkstra" or algo_name == "Improved Dijkstra":
-        operations = (V + E) * math.log2(V)
-        return f"Theoretical Operations: (V + E) log V ≈ ({V} + {E}) log2({V}) = {operations:.2f} operations"
-    elif algo_name == "Bellman-Ford":
-        operations = V * E
-        return f"Theoretical Operations: V * E ≈ {V} * {E} = {operations:.2f} operations"
-    elif algo_name == "Floyd-Warshall":
-        operations = V**3
-        return f"Theoretical Operations: V^3 ≈ {V}^3 = {operations:.2f} operations"
+def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1, max_weight=10):
+    G = nx.DiGraph() if directed else nx.Graph()
+    for i in range(num_nodes):
+        G.add_node(i)
+    for i in range(num_nodes):
+        for j in range(num_nodes):
+            if i != j and random.random() < edge_prob:
+                if weighted:
+                    weight = random.randint(min_weight, max_weight)
+                    G.add_edge(i, j, weight=weight)
+                else:
+                    G.add_edge(i, j)
+    return G
+
+def draw_graph(G):
+    pos = nx.spring_layout(G)
+    if nx.get_edge_attributes(G, 'weight'):
+        labels = nx.get_edge_attributes(G, 'weight')
+        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     else:
-        return "Unknown Algorithm"
+        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
+    plt.show()
 
+def print_adjacency_matrix(G):
+    adj_matrix = nx.adjacency_matrix(G).todense()
+    print("Adjacency Matrix:")
+    print(adj_matrix)
 
-def calculate_and_display(G, algo_name, func, *args, **kwargs):
-    """
-    Calculates and displays time complexity, actual execution time, and time per operation.
-    """
-    try:
-        print(f"\n[{algo_name}]")
-        V = len(G.nodes())
-        E = len(G.edges())
+def handle_random_graph():
+    num_nodes = int(input("Enter the number of nodes: "))
+    edge_prob = float(input("Enter the edge creation probability (0-1): "))
+    directed = input("Should the graph be directed? (yes/no): ").strip().lower() == "yes"
+    weighted = input("Should the graph be weighted? (yes/no): ").strip().lower() == "yes"
 
-        # Estimate theoretical operations
-        theoretical_ops = 0
-        if algo_name in ["Dijkstra's Algorithm", "Improved Dijkstra's Algorithm"]:
-            if V > 1:
-                theoretical_ops = (V + E) * math.log2(V)
-                print(f"Theoretical Operations: (V + E) log V ≈ ({V} + {E}) log2({V}) = {theoretical_ops:.2f}")
-            else:
-                print("Graph must have more than one vertex for Dijkstra's algorithm.")
-        elif algo_name == "Bellman-Ford Algorithm":
-            theoretical_ops = V * E
-            print(f"Theoretical Operations: V * E ≈ {V} * {E} = {theoretical_ops:.2f}")
-        elif algo_name == "Floyd-Warshall Algorithm":
-            theoretical_ops = V ** 3
-            print(f"Theoretical Operations: V^3 ≈ {V}^3 = {theoretical_ops:.2f}")
-
-        result, elapsed_time = measure_execution_time(func, *args, **kwargs)
-
-        if theoretical_ops > 0:
-            time_per_op = elapsed_time / theoretical_ops
-            print(f"Measured Time: {elapsed_time:.6f} seconds")
-            print(f"Time per Operation: {time_per_op:.10f} seconds/operation")
-        else:
-            print(f"Measured Time: {elapsed_time:.6f} seconds")
-            print(f"Time per Operation: N/A")
-
-        return result
-    except Exception as e:
-        print(f"{algo_name} failed: {e}")
-        return None
-
-def compare_algorithms(G):
-    """
-    Compares all shortest path algorithms and shows timing and theoretical analysis.
-    """
-    V = len(G.nodes())
-    E = len(G.edges())
-
-    edge_weights = nx.get_edge_attributes(G, 'weight')
-    is_unweighted = len(edge_weights) == 0
-
-    if is_unweighted:
-        print("Graph is unweighted. Assigning default weight = 1 to all edges.\n")
-        for u, v in G.edges():
-            G[u][v]['weight'] = 1
+    if weighted:
+        min_weight = int(input("Enter the minimum weight: "))
+        max_weight = int(input("Enter the maximum weight: "))
+        G = generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight, max_weight)
     else:
-        print("Graph is already weighted.\n")
+        G = generate_random_graph(num_nodes, edge_prob, directed, weighted)
 
-    source = int(input("Enter the source node: "))
-    target = int(input("Enter the target node: "))
-    if not nx.has_path(G, source, target):
-        print(f"No path exists between node {source} and node {target}.")
-        return
+    print("\n--- Adjacency Matrix ---")
+    print_adjacency_matrix(G)
+    draw_graph(G)
+    return G
 
-    print("\n--- Time, Operations, and Time-per-Operation Comparison ---\n")
+def handle_user_defined_graph():
+    directed = input("Should the graph be directed? (yes/no): ").strip().lower() == "yes"
+    weighted = input("Should the graph be weighted? (yes/no): ").strip().lower() == "yes"
+    num_nodes = int(input("Enter the number of nodes: "))
 
-    calculate_and_display(G, "Dijkstra's Algorithm", nx.dijkstra_path, G, source, target, weight='weight')
-    calculate_and_display(G, "Improved Dijkstra's Algorithm", improved_dijkstra, G, source, target)
-    calculate_and_display(G, "Bellman-Ford Algorithm", nx.single_source_bellman_ford_path, G, source, weight='weight')
-    calculate_and_display(G, "Floyd-Warshall Algorithm", nx.floyd_warshall_predecessor_and_distance, G, weight='weight')
+    G = nx.DiGraph() if directed else nx.Graph()
+    G.add_nodes_from(range(num_nodes))
 
-    if is_unweighted:
-        for u, v in G.edges():
-            del G[u][v]['weight']
+    print("Enter the adjacency matrix row by row (space-separated values):")
+    for i in range(num_nodes):
+        row = list(map(float, input(f"Row {i + 1}: ").strip().split()))
+        for j, weight in enumerate(row):
+            if weight != 0:
+                if weighted:
+                    G.add_edge(i, j, weight=weight)
+                else:
+                    G.add_edge(i, j)
 
-
+    print("\n--- Adjacency Matrix ---")
+    print_adjacency_matrix(G)
+    draw_graph(G)
+    return G
