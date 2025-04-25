@@ -1,8 +1,7 @@
 import networkx as nx
 import heapq
 import streamlit as st
-from comparison_streamlit import compare_algorithms
-from graph_generation_streamlit import generate_graph  # if you have such a function
+
 
 def dijkstra(G, source, target):
     return nx.dijkstra_path(G, source, target, weight='weight')
