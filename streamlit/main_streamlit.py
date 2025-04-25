@@ -1,13 +1,13 @@
 import streamlit as st
 import networkx as nx
+import random
 
-def select_shortest_path_algorithm_streamlit(G, improved_dijkstra):
+def select_shortest_path_algorithm_streamlit(G):
     """
     Streamlit version of the algorithm selector.
     """
     algo_options = [
         "Dijkstra's Algorithm",
-        "Improved Dijkstra's Algorithm",
         "Bellman-Ford Algorithm",
         "Floyd-Warshall Algorithm (All Pairs)",
         "Compare All Algorithms"
@@ -25,9 +25,6 @@ def select_shortest_path_algorithm_streamlit(G, improved_dijkstra):
         if algo_choice == "Dijkstra's Algorithm":
             path = nx.dijkstra_path(G, source, target, weight='weight')
             st.success(f"Dijkstra's Path: {path}")
-        elif algo_choice == "Improved Dijkstra's Algorithm":
-            path = improved_dijkstra(G, source, target)
-            st.success(f"Improved Dijkstra's Path: {path}")
         elif algo_choice == "Bellman-Ford Algorithm":
             path_dict = nx.single_source_bellman_ford_path(G, source, weight='weight')
             path = path_dict.get(target)
@@ -49,9 +46,9 @@ def select_shortest_path_algorithm_streamlit(G, improved_dijkstra):
             st.success(f"Floyd-Warshall Path: {path}")
         elif algo_choice == "Compare All Algorithms":
             from your_module import compare_algorithms_streamlit
-            compare_algorithms_streamlit(G, improved_dijkstra)
+            compare_algorithms_streamlit(G)
 
-def main_streamlit(improved_dijkstra):
+def main_streamlit():
     """
     Streamlit main app for graph creation and algorithm selection.
     """
@@ -69,7 +66,7 @@ def main_streamlit(improved_dijkstra):
             G = nx.erdos_renyi_graph(n=num_nodes, p=prob, directed=True)
             if weighted:
                 for u, v in G.edges():
-                    G[u][v]['weight'] = st.session_state.get("weight_function", lambda: random.randint(1, 10))()
+                    G[u][v]['weight'] = random.randint(1, 10)
             st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
     elif mode == "User-defined":
@@ -77,6 +74,7 @@ def main_streamlit(improved_dijkstra):
 
     if G:
         st.graphviz_chart(nx.nx_pydot.to_pydot(G).to_string())
-        select_shortest_path_algorithm_streamlit(G, improved_dijkstra)
+        select_shortest_path_algorithm_streamlit(G)
+
 if __name__ == "__main__":
-    main()
+    main_streamlit()
