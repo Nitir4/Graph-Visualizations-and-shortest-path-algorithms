@@ -162,53 +162,30 @@ def find_shortest_path_floyd_warshall(G):
 
 # Algorithm selection
 def select_shortest_path_algorithm(G):
-    """
-    Allows the user to select a shortest path algorithm without regenerating the graph.
-    """
-    while True:
-        print("\n--- Shortest Path Algorithm Menu ---")
-        print("1. Dijkstra's Algorithm")
-        print("2. Improved Dijkstra's Algorithm")
-        print("3. Bellman-Ford Algorithm")
-        print("4. Floyd-Warshall Algorithm (all pairs)")
-        print("5. Compare All Algorithms (time and results)")
-        print("6. Exit")
+    st.write("\n--- Select a Shortest Path Algorithm ---")
+    algorithm = st.selectbox("Choose the algorithm", ["Dijkstra's Algorithm", "Improved Dijkstra's Algorithm", "Bellman-Ford Algorithm", "Floyd-Warshall Algorithm"])
+    
+    if algorithm == "Dijkstra's Algorithm":
+        find_shortest_path_dijkstra(G)
+    elif algorithm == "Improved Dijkstra's Algorithm":
+        find_shortest_path_improved_dijkstra(G)
+    elif algorithm == "Bellman-Ford Algorithm":
+        find_shortest_path_bellman_ford(G)
+    elif algorithm == "Floyd-Warshall Algorithm":
+        find_shortest_path_floyd_warshall(G)
 
-        choice = int(input("Enter your choice (1-6): "))
-
-        if choice == 1:
-            find_shortest_path_dijkstra(G)
-        elif choice == 2:
-            find_shortest_path_improved_dijkstra(G)
-        elif choice == 3:
-            find_shortest_path_bellman_ford(G)
-        elif choice == 4:
-            find_shortest_path_floyd_warshall(G)
-        elif choice == 5:
-            compare_algorithms(G)
-        elif choice == 6:
-            break
-        else:
-            print("Invalid choice. Please try again.")
-
-
+# Main function to interact with Streamlit
 def main():
-    print("--- Graph Generator and Shortest Path Finder ---")
-    G = None  # Initialize graph variable to store the graph
-    while True:
-        graph_choice = input("Do you want a random or user-defined graph? (random/user-defined/exit): ").strip().lower()
-        
-        if graph_choice == "random":
-            G = handle_random_graph()  # Generate random graph only once
-            select_shortest_path_algorithm(G)
-        elif graph_choice == "user-defined":
-            G = handle_user_defined_graph()  # Generate user-defined graph only once
-            select_shortest_path_algorithm(G)
-        elif graph_choice == "exit":
-            break
-        else:
-            print("Invalid choice.")
+    st.title("Graph Generator and Shortest Path Finder")
 
+    graph_choice = st.radio("Do you want a random or user-defined graph?", ("Random", "User-defined"))
+
+    if graph_choice == "Random":
+        G = handle_random_graph()  # Generate random graph
+    elif graph_choice == "User-defined":
+        G = handle_user_defined_graph()  # Generate user-defined graph
+
+    select_shortest_path_algorithm(G)  # Select and run the algorithm
 
 if __name__ == "__main__":
     main()
