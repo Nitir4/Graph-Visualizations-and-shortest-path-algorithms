@@ -68,7 +68,7 @@ def main_streamlit():
             st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
             # Display Adjacency Matrix
-            adj_matrix = nx.to_numpy_matrix(G)
+            adj_matrix = nx.to_numpy_array(G)
             st.write("Adjacency Matrix:")
             st.dataframe(pd.DataFrame(adj_matrix))
 
