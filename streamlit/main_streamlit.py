@@ -1,6 +1,6 @@
 import streamlit as st
 import networkx as nx
-import random
+import pandas as pd
 
 def select_shortest_path_algorithm_streamlit(G):
     """
@@ -9,8 +9,7 @@ def select_shortest_path_algorithm_streamlit(G):
     algo_options = [
         "Dijkstra's Algorithm",
         "Bellman-Ford Algorithm",
-        "Floyd-Warshall Algorithm (All Pairs)",
-        "Compare All Algorithms"
+        "Floyd-Warshall Algorithm (All Pairs)"
     ]
     algo_choice = st.selectbox("Choose a shortest path algorithm:", algo_options)
 
@@ -44,9 +43,6 @@ def select_shortest_path_algorithm_streamlit(G):
                     return
             path.insert(0, source)
             st.success(f"Floyd-Warshall Path: {path}")
-        elif algo_choice == "Compare All Algorithms":
-            from your_module import compare_algorithms_streamlit
-            compare_algorithms_streamlit(G)
 
 def main_streamlit():
     """
@@ -66,8 +62,13 @@ def main_streamlit():
             G = nx.erdos_renyi_graph(n=num_nodes, p=prob, directed=True)
             if weighted:
                 for u, v in G.edges():
-                    G[u][v]['weight'] = random.randint(1, 10)
+                    G[u][v]['weight'] = st.session_state.get("weight_function", lambda: random.randint(1, 10))()
             st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
+
+            # Display Adjacency Matrix
+            adj_matrix = nx.to_numpy_matrix(G)
+            st.write("Adjacency Matrix:")
+            st.dataframe(pd.DataFrame(adj_matrix))
 
     elif mode == "User-defined":
         st.warning("User-defined input not implemented in this version. (Want help building it?)")
