@@ -1,6 +1,7 @@
 import streamlit as st
 import networkx as nx
 import pandas as pd
+import random
 
 def select_shortest_path_algorithm_streamlit(G):
     """
@@ -61,8 +62,9 @@ def main_streamlit():
         if st.button("Generate Random Graph"):
             G = nx.erdos_renyi_graph(n=num_nodes, p=prob, directed=True)
             if weighted:
+                # Assign random weights to edges
                 for u, v in G.edges():
-                    G[u][v]['weight'] = st.session_state.get("weight_function", lambda: random.randint(1, 10))()
+                    G[u][v]['weight'] = random.randint(1, 10)
             st.success(f"Generated Random Graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
 
             # Display Adjacency Matrix
