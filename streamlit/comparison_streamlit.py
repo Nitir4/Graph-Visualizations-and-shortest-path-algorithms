@@ -23,10 +23,20 @@ def calculate_theoretical_time(V, E, algo_name):
         return "Unknown Algorithm"
 
 def compare_algorithms(G, algo_choice, source, target):
-    result, elapsed_time = measure_execution_time(execute_shortest_path_algorithm, G, algo_choice, source, target)
-    V = len(G.nodes())
-    E = len(G.edges())
+    print(f"Graph: {G}")
+    print(f"Algorithm Choice: {algo_choice}")
+    print(f"Source Node: {source}, Target Node: {target}")
     
-    theoretical_time = calculate_theoretical_time(V, E, algo_choice)
+    # Measure execution time and check result
+    try:
+        result, elapsed_time = measure_execution_time(execute_shortest_path_algorithm, G, algo_choice, source, target)
+        print(f"Result: {result}")
+        V = len(G.nodes())
+        E = len(G.edges())
     
-    return result, elapsed_time, theoretical_time
+        theoretical_time = calculate_theoretical_time(V, E, algo_choice)
+        return result, elapsed_time, theoretical_time
+    except Exception as e:
+        print(f"Error during algorithm execution: {e}")
+        return None, None, None
+
