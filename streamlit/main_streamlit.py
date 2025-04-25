@@ -49,9 +49,6 @@ def handle_random_graph():
     else:
         G = generate_random_graph(num_nodes, edge_prob, directed, weighted)
 
-    st.write("--- Adjacency Matrix ---")
-    print_adjacency_matrix(G)
-    draw_graph(G)
     return G
 
 def handle_user_defined_graph():
@@ -73,9 +70,6 @@ def handle_user_defined_graph():
                 else:
                     G.add_edge(i, j)
 
-    st.write("--- Adjacency Matrix ---")
-    print_adjacency_matrix(G)
-    draw_graph(G)
     return G
 
 # Shortest path algorithms
@@ -114,68 +108,83 @@ def improved_dijkstra(G, source, target):
 
     return path, distances[target]
 
-def find_shortest_path_dijkstra(G):
-    source = st.number_input("Enter the source node:", min_value=0)
-    target = st.number_input("Enter the target node:", min_value=0)
+def find_shortest_path_dijkstra(G, source, target):
     if nx.has_path(G, source, target):
         result, elapsed_time = measure_execution_time(nx.dijkstra_path, G, source, target, weight='weight')
         path_length = nx.dijkstra_path_length(G, source, target, weight='weight')
-        st.write(f"Dijkstra's Shortest Path: {result}")
-        st.write(f"Path Length: {path_length}")
-        st.write(f"Execution Time: {elapsed_time:.6f} seconds")
+        return result, path_length, elapsed_time
     else:
-        st.write(f"No path exists between node {source} and node {target}.")
+        return None, None, None
 
-def find_shortest_path_improved_dijkstra(G):
-    source = st.number_input("Enter the source node:", min_value=0)
-    target = st.number_input("Enter the target node:", min_value=0)
-
+def find_shortest_path_improved_dijkstra(G, source, target):
     if nx.has_path(G, source, target):
         result, elapsed_time = measure_execution_time(improved_dijkstra, G, source, target)
         path, length = result
-        st.write(f"\nImproved Dijkstra's Shortest Path: {path}")
-        st.write(f"Total path length: {length}")
-        st.write(f"Execution time: {elapsed_time:.6f} seconds")
+        return path, length, elapsed_time
     else:
-        st.write(f"No path exists between node {source} and node {target}.")
+        return None, None, None
 
-def find_shortest_path_bellman_ford(G):
-    source = st.number_input("Enter the source node:", min_value=0)
-    target = st.number_input("Enter the target node:", min_value=0)
+def find_shortest_path_bellman_ford(G, source, target):
     if nx.has_path(G, source, target):
         result, elapsed_time = measure_execution_time(nx.single_source_bellman_ford_path, G, source, weight='weight')
         path = result[target]
         path_length = nx.single_source_bellman_ford_path_length(G, source, weight='weight')[target]
-        st.write(f"Bellman-Ford's Shortest Path: {path}")
-        st.write(f"Path Length: {path_length}")
-        st.write(f"Execution Time: {elapsed_time:.6f} seconds")
+        return path, path_length, elapsed_time
     else:
-        st.write(f"No path exists between node {source} and node {target}.")
+        return None, None, None
 
 def find_shortest_path_floyd_warshall(G):
     result, elapsed_time = measure_execution_time(nx.floyd_warshall, G, weight='weight')
-    st.write("\nFloyd-Warshall Shortest Paths:")
-    for source, targets in result.items():
-        for target, distance in targets.items():
-            st.write(f"Shortest Path from {source} to {target}: {distance}")
-    st.write(f"Execution Time: {elapsed_time:.6f} seconds")
+    return result, elapsed_time
+
+# Compare all algorithms
+def compare_all_algorithms(G, source, target):
+    dijkstra_result, dijkstra_length, dijkstra_time = find_shortest_path_dijkstra(G, source, target)
+    improved_dijkstra_result, improved_dijkstra_length, improved_dijkstra_time = find_shortest_path_improved_dijkstra(G, source, target)
+    bellman_ford_result, bellman_ford_length, bellman_ford_time = find_shortest_path_bellman_ford(G, source, target)
+    floyd_warshall_result, floyd_warshall_time = find_shortest_path_floyd_warshall(G)
+
+    st.write(f"\n--- Dijkstra ---")
+    if dijkstra_result:
+        st.write(f"Path: {dijkstra_result}, Length: {dijkstra_length}, Time: {dijkstra_time:.6f}s")
+    else:
+        st.write("No path found")
+
+    st.write(f"\n--- Improved Dijkstra ---")
+    if improved_dijkstra_result:
+        st.write(f"Path: {improved_dijkstra_result}, Length: {improved_dijkstra_length}, Time: {improved_dijkstra_time:.6f}s")
+    else:
+        st.write("No path found")
+
+    st.write(f"\n--- Bellman-Ford ---")
+    if bellman_ford_result:
+        st.write(f"Path: {bellman_ford_result}, Length: {bellman_ford_length}, Time: {bellman_ford_time:.6f}s")
+    else:
+        st.write("No path found")
+
+    st.write(f"\n--- Floyd-Warshall ---")
+    if floyd_warshall_result:
+        st.write(f"All Pairs Shortest Paths: {floyd_warshall_result}")
+    st.write(f"Time: {floyd_warshall_time:.6f}s")
 
 # Algorithm selection
-def select_shortest_path_algorithm():
-    """
-    Allows the user to select a shortest path algorithm without regenerating the graph.
-    """
+def select_shortest_path_algorithm(G):
     st.write("--- Shortest Path Algorithm Menu ---")
-    algorithm_choice = st.selectbox("Choose an algorithm", ["Dijkstra", "Improved Dijkstra", "Bellman-Ford", "Floyd-Warshall"])
-    
+    algorithm_choice = st.selectbox("Choose an algorithm", ["Dijkstra", "Improved Dijkstra", "Bellman-Ford", "Floyd-Warshall", "Compare All"])
+
+    source = st.number_input("Enter the source node:", min_value=0)
+    target = st.number_input("Enter the target node:", min_value=0)
+
     if algorithm_choice == "Dijkstra":
-        find_shortest_path_dijkstra(st.session_state.graph)
+        find_shortest_path_dijkstra(G, source, target)
     elif algorithm_choice == "Improved Dijkstra":
-        find_shortest_path_improved_dijkstra(st.session_state.graph)
+        find_shortest_path_improved_dijkstra(G, source, target)
     elif algorithm_choice == "Bellman-Ford":
-        find_shortest_path_bellman_ford(st.session_state.graph)
+        find_shortest_path_bellman_ford(G, source, target)
     elif algorithm_choice == "Floyd-Warshall":
-        find_shortest_path_floyd_warshall(st.session_state.graph)
+        find_shortest_path_floyd_warshall(G)
+    elif algorithm_choice == "Compare All":
+        compare_all_algorithms(G, source, target)
 
 def main():
     # Initialize session state for graph if not already done
@@ -199,7 +208,7 @@ def main():
         st.write("--- Adjacency Matrix ---")
         print_adjacency_matrix(st.session_state.graph)
 
-    select_shortest_path_algorithm()
+    select_shortest_path_algorithm(st.session_state.graph)
 
 if __name__ == "__main__":
     main()
