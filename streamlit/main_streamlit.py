@@ -5,188 +5,181 @@ import matplotlib.pyplot as plt
 import heapq
 import streamlit as st
 
-# Graph generation functions
-def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1, max_weight=10):
+st.set_page_config(layout="wide")
+
+# ─── Graph generation ──────────────────────────────────────────────────────────
+def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_w, max_w):
     G = nx.DiGraph() if directed else nx.Graph()
-    for i in range(num_nodes):
-        G.add_node(i)
+    G.add_nodes_from(range(num_nodes))
     for i in range(num_nodes):
         for j in range(num_nodes):
-            if i != j and random.random() < edge_prob:
-                if weighted:
-                    weight = random.randint(min_weight, max_weight)
-                    G.add_edge(i, j, weight=weight)
-                else:
-                    G.add_edge(i, j)
+            if i!=j and random.random() < edge_prob:
+                w = random.randint(min_w, max_w) if weighted else 1
+                G.add_edge(i, j, weight=w)
     return G
 
 def draw_graph(G):
-    plt.clf()  # Clear the previous figure
+    plt.clf()
     pos = nx.spring_layout(G)
-    if nx.get_edge_attributes(G, 'weight'):
-        labels = nx.get_edge_attributes(G, 'weight')
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
-    else:
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
+    nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray")
+    if nx.get_edge_attributes(G,'weight'):
+        nx.draw_networkx_edge_labels(G,pos,
+            edge_labels=nx.get_edge_attributes(G,'weight'))
     st.pyplot(plt)
 
-def print_adjacency_matrix(G):
-    adj_matrix = nx.adjacency_matrix(G).todense()
-    st.write("Adjacency Matrix:")
-    st.write(adj_matrix)
+def show_adjacency(G):
+    mat = nx.adjacency_matrix(G, weight='weight').todense()
+    st.write(mat)
 
-def handle_random_graph():
-    num_nodes = st.number_input("Enter the number of nodes:", min_value=1, value=5)
-    edge_prob = st.slider("Enter the edge creation probability (0-1):", 0.0, 1.0, 0.3)
-    directed = st.radio("Should the graph be directed?", ("Yes", "No")) == "Yes"
-    weighted = st.radio("Should the graph be weighted?", ("Yes", "No")) == "Yes"
+# ─── Shortest-path wrappers ─────────────────────────────────────────────────────
+def measure(func, *args):
+    start = time.time()
+    out = func(*args)
+    return out, time.time()-start
 
-    if weighted:
-        min_weight = st.number_input("Enter the minimum weight:", min_value=1, value=1)
-        max_weight = st.number_input("Enter the maximum weight:", min_value=1, value=10)
-        G = generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight, max_weight)
-    else:
-        G = generate_random_graph(num_nodes, edge_prob, directed, weighted)
+def safe_dijkstra(G,s,t):
+    try:
+        path, time_ = measure(nx.dijkstra_path, G, s, t, weight='weight')
+        length = nx.dijkstra_path_length(G, s, t, weight='weight')
+        return path, length, time_
+    except nx.NetworkXNoPath:
+        return None, None, None
 
-    return G
+def safe_improved(G,s,t):
+    try:
+        (path, length), time_ = measure(improved_dijkstra_impl, G, s, t)
+        return path, length, time_
+    except nx.NetworkXNoPath:
+        return None, None, None
 
-def handle_user_defined_graph():
-    directed = st.radio("Should the graph be directed?", ("Yes", "No")) == "Yes"
-    weighted = st.radio("Should the graph be weighted?", ("Yes", "No")) == "Yes"
-    num_nodes = st.number_input("Enter the number of nodes:", min_value=1, value=5)
+def safe_bellman(G,s,t):
+    try:
+        paths, time_ = measure(nx.single_source_bellman_ford_path, G, s, weight='weight')
+        lengths = nx.single_source_bellman_ford_path_length(G, s, weight='weight')
+        return paths[t], lengths[t], time_
+    except nx.NetworkXNoPath:
+        return None, None, None
 
-    G = nx.DiGraph() if directed else nx.Graph()
-    G.add_nodes_from(range(num_nodes))
+def safe_floyd(G, s, t):
+    # floyd_warshall returns dict-of-dicts of distances
+    dist, time_ = measure(nx.floyd_warshall, G, weight='weight')
+    # no explicit path reconstruction here
+    return dist, time_
 
-    st.write("Enter the adjacency matrix row by row (space-separated values):")
-    for i in range(num_nodes):
-        row = st.text_input(f"Row {i+1}:")
-        row_values = list(map(float, row.strip().split()))
-        for j, weight in enumerate(row_values):
-            if weight != 0:
-                if weighted:
-                    G.add_edge(i, j, weight=weight)
-                else:
-                    G.add_edge(i, j)
-
-    return G
-
-# Shortest path algorithms
-def measure_execution_time(func, *args, **kwargs):
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    elapsed_time = time.time() - start_time
-    return result, elapsed_time
-
-def improved_dijkstra(G, source, target):
-    pq = []
-    heapq.heappush(pq, (0, source))
-
-    distances = {node: float('inf') for node in G.nodes()}
-    distances[source] = 0
-    predecessors = {node: None for node in G.nodes()}
-
+def improved_dijkstra_impl(G, source, target):
+    # priority-queue based Dijkstra
+    pq = [(0,source)]
+    dist = {n:float('inf') for n in G.nodes()}
+    dist[source]=0
+    prev={n:None for n in G.nodes()}
     while pq:
-        current_distance, current_node = heapq.heappop(pq)
-        if current_node == target:
-            break
-        for neighbor, attributes in G[current_node].items():
-            weight = attributes.get('weight', 1)
-            distance = current_distance + weight
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                predecessors[neighbor] = current_node
-                heapq.heappush(pq, (distance, neighbor))
-
-    path = []
-    current = target
-    while current is not None:
-        path.append(current)
-        current = predecessors[current]
+        d,u = heapq.heappop(pq)
+        if u==target: break
+        for v,attr in G[u].items():
+            w = attr.get('weight',1)
+            nd = d+w
+            if nd<dist[v]:
+                dist[v]=nd
+                prev[v]=u
+                heapq.heappush(pq,(nd,v))
+    # reconstruct
+    path=[]
+    u=target
+    while u is not None:
+        path.append(u)
+        u=prev[u]
     path.reverse()
+    return path, dist[target]
 
-    return path, distances[target]
-
-def find_shortest_path_dijkstra(G, source, target):
-    result, elapsed_time = measure_execution_time(nx.dijkstra_path, G, source, target, weight='weight')
-    path_length = nx.dijkstra_path_length(G, source, target, weight='weight')
-    return result, path_length, elapsed_time
-
-def find_shortest_path_improved_dijkstra(G, source, target):
-    result, elapsed_time = measure_execution_time(improved_dijkstra, G, source, target)
-    path, length = result
-    return path, length, elapsed_time
-
-def find_shortest_path_bellman_ford(G, source, target):
-    result, elapsed_time = measure_execution_time(nx.single_source_bellman_ford_path, G, source, weight='weight')
-    path = result[target]
-    path_length = nx.single_source_bellman_ford_path_length(G, source, weight='weight')[target]
-    return path, path_length, elapsed_time
-
-def find_shortest_path_floyd_warshall(G):
-    result, elapsed_time = measure_execution_time(nx.floyd_warshall, G, weight='weight')
-    return result, elapsed_time
-
-# Algorithm selection
-def select_shortest_path_algorithm(G):
-    st.write("--- Shortest Path Algorithm Menu ---")
-    algorithm_choice = st.selectbox("Choose an algorithm", ["Dijkstra", "Improved Dijkstra", "Bellman-Ford", "Floyd-Warshall", "Compare All"])
-
-    source = st.number_input("Enter the source node:", min_value=0)
-    target = st.number_input("Enter the target node:", min_value=0)
-
-    if algorithm_choice == "Dijkstra":
-        path, length, time_elapsed = find_shortest_path_dijkstra(G, source, target)
-        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
-    elif algorithm_choice == "Improved Dijkstra":
-        path, length, time_elapsed = find_shortest_path_improved_dijkstra(G, source, target)
-        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
-    elif algorithm_choice == "Bellman-Ford":
-        path, length, time_elapsed = find_shortest_path_bellman_ford(G, source, target)
-        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
-    elif algorithm_choice == "Floyd-Warshall":
-        result, time_elapsed = find_shortest_path_floyd_warshall(G)
-        st.write(f"All Pairs Shortest Paths: {result}")
-        st.write(f"Time: {time_elapsed:.6f}s")
-    elif algorithm_choice == "Compare All":
-        compare_all_algorithms(G, source, target)
-
-def compare_all_algorithms(G, source, target):
-    st.write("\n--- Comparison of All Algorithms ---")
-    algorithms = {
-        "Dijkstra": find_shortest_path_dijkstra,
-        "Improved Dijkstra": find_shortest_path_improved_dijkstra,
-        "Bellman-Ford": find_shortest_path_bellman_ford
-    }
-    
-    for name, algo in algorithms.items():
-        path, length, time_elapsed = algo(G, source, target)
-        st.write(f"{name}: Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
-
+# ─── Streamlit UI ──────────────────────────────────────────────────────────────
 def main():
-    # Initialize session state for graph if not already done
-    if 'graph' not in st.session_state:
-        st.session_state.graph = None
+    st.title("📊 Graph & Shortest-Path Visualizer")
 
-    st.write("--- Graph Generator and Shortest Path Finder ---")
-    
-    graph_choice = st.radio("Do you want a random or user-defined graph?", ("random", "user-defined"))
+    # initialize
+    if 'G' not in st.session_state:
+        st.session_state.G = None
 
-    # Only generate the graph if it doesn't exist already in session_state
-    if graph_choice == "random" and st.session_state.graph is None:
-        st.session_state.graph = handle_random_graph()
-    elif graph_choice == "user-defined" and st.session_state.graph is None:
-        st.session_state.graph = handle_user_defined_graph()
+    # Graph controls
+    with st.sidebar:
+        st.header("Graph Controls")
+        kind = st.radio("Graph type", ["Random", "User-Defined"])
+        if kind=="Random":
+            n = st.number_input("Nodes", min_value=1, value=5)
+            p = st.slider("Edge probability", 0.0, 1.0, 0.3)
+            directed = st.checkbox("Directed")
+            weighted = st.checkbox("Weighted")
+            if weighted:
+                min_w = st.number_input("Min weight", value=1)
+                max_w = st.number_input("Max weight", value=10)
+            else:
+                min_w, max_w = 1,1
+            if st.button("Generate Graph"):
+                st.session_state.G = generate_random_graph(n,p,directed,weighted,min_w,max_w)
+        else:
+            directed = st.checkbox("Directed")
+            weighted = st.checkbox("Weighted")
+            rows = st.text_area("Adjacency matrix (rows of space-sep weights)")
+            if st.button("Load Graph"):
+                mat = [list(map(float,row.split())) for row in rows.splitlines() if row]
+                G = nx.DiGraph() if directed else nx.Graph()
+                size = len(mat)
+                G.add_nodes_from(range(size))
+                for i in range(size):
+                    for j,w in enumerate(mat[i]):
+                        if w!=0: G.add_edge(i,j,weight=w)
+                st.session_state.G = G
 
-    # Always show the selected graph and its adjacency matrix if it exists
-    if st.session_state.graph:
-        st.write("--- Graph Display ---")
-        draw_graph(st.session_state.graph)
-        st.write("--- Adjacency Matrix ---")
-        print_adjacency_matrix(st.session_state.graph)
+    G = st.session_state.G
 
-    select_shortest_path_algorithm(st.session_state.graph)
+    # Display graph & matrix
+    if G is not None:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Graph")
+            draw_graph(G)
+        with col2:
+            st.subheader("Adjacency Matrix")
+            show_adjacency(G)
 
-if __name__ == "__main__":
+        # Shortest-path controls
+        st.subheader("Shortest-Path Algorithms")
+        algo = st.selectbox("Algorithm", ["Dijkstra","Improved","Bellman-Ford","Floyd-Warshall","Compare All"])
+        s = st.number_input("Source", min_value=0, max_value=len(G)-1, value=0)
+        t = st.number_input("Target", min_value=0, max_value=len(G)-1, value=1)
+        if st.button("Run"):
+            if algo=="Dijkstra":
+                path,length,tm = safe_dijkstra(G,s,t)
+                if path is None: st.error("No path!")
+                else: st.write(f"Path: {path}  Length: {length}  Time: {tm:.6f}s")
+            elif algo=="Improved":
+                path,length,tm = safe_improved(G,s,t)
+                if path is None: st.error("No path!")
+                else: st.write(f"Path: {path}  Length: {length}  Time: {tm:.6f}s")
+            elif algo=="Bellman-Ford":
+                path,length,tm = safe_bellman(G,s,t)
+                if path is None: st.error("No path!")
+                else: st.write(f"Path: {path}  Length: {length}  Time: {tm:.6f}s")
+            elif algo=="Floyd-Warshall":
+                dist,tm = safe_floyd(G,s,t)
+                st.write(f"All-pairs distances:\n {dist}\nTime: {tm:.6f}s")
+            else:  # Compare All
+                st.write("## Compare All Algorithms")
+                for name,fn in [("Dijkstra", safe_dijkstra),
+                                ("Improved", safe_improved),
+                                ("Bellman-Ford", safe_bellman),
+                                ("Floyd-Warshall", safe_floyd)]:
+                    if name=="Floyd-Warshall":
+                        dist,tm = fn(G,s,t)
+                        st.write(f"**{name}** time: {tm:.6f}s")
+                    else:
+                        path,length,tm = fn(G,s,t)
+                        if path is None:
+                            st.write(f"**{name}**: No path")
+                        else:
+                            st.write(f"**{name}**: Path={path}, Len={length}, Time={tm:.6f}s")
+
+    else:
+        st.info("Generate or load a graph first.")
+
+if __name__=="__main__":
     main()
