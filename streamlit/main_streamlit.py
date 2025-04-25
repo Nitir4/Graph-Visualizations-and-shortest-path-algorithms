@@ -45,8 +45,7 @@ def improved_dijkstra(G, source, target):
     prev = {n: None for n in G.nodes()}
     while pq:
         d, u = heapq.heappop(pq)
-        if u == target:
-            break
+        if u == target: break
         for v, attr in G[u].items():
             w = attr.get("weight", 1)
             nd = d + w
@@ -66,14 +65,14 @@ def safe_dijkstra(G, s, t):
         length = nx.dijkstra_path_length(G, s, t, weight="weight")
         return path, length, tm
     except nx.NetworkXNoPath:
-        return None, None, None
+        return None, None, 0
 
 def safe_improved(G, s, t):
     try:
         (path, length), tm = measure(improved_dijkstra, G, s, t)
         return path, length, tm
     except nx.NetworkXNoPath:
-        return None, None, None
+        return None, None, 0
 
 def safe_bellman(G, s, t):
     try:
@@ -81,24 +80,23 @@ def safe_bellman(G, s, t):
         lengths = nx.single_source_bellman_ford_path_length(G, s, weight="weight")
         return paths[t], lengths[t], tm
     except nx.NetworkXNoPath:
-        return None, None, None
+        return None, None, 0
 
 def safe_floyd(G):
     (pred, dist), tm = measure(nx.floyd_warshall_predecessor_and_distance, G, weight="weight")
     # build all-pairs paths
-    paths = {}
+    paths = {u:{} for u in G.nodes()}
     for u in G.nodes():
-        paths[u] = {}
         for v in G.nodes():
-            if u == v:
+            if u==v:
                 paths[u][v] = [u]
             elif v not in pred[u]:
                 paths[u][v] = None
             else:
-                p = [v]
-                while p[-1] != u:
+                p=[v]
+                while p[-1]!=u:
                     p.append(pred[u][p[-1]])
-                paths[u][v] = list(reversed(p))
+                paths[u][v]=list(reversed(p))
     plain_dist = {u: dict(dist[u]) for u in dist}
     return paths, plain_dist, tm
 
@@ -109,90 +107,87 @@ def main():
     if "G" not in st.session_state:
         st.session_state.G = None
 
-    # Sidebar: graph controls
     with st.sidebar:
         st.header("Graph Controls")
         kind = st.radio("Graph type", ["Random", "User-Defined"])
-        if kind == "Random":
-            n = st.number_input("Nodes", 1, 50, 5)
-            p = st.slider("Edge prob", 0.0, 1.0, 0.3)
+        if kind=="Random":
+            n = st.number_input("Nodes",1,50,5)
+            p = st.slider("Edge prob",0.0,1.0,0.3)
             directed = st.checkbox("Directed")
             weighted = st.checkbox("Weighted")
             if weighted:
-                min_w = st.number_input("Min weight", 1, 1)
-                max_w = st.number_input("Max weight", 1, 10)
+                min_w = st.number_input("Min weight",1,1)
+                max_w = st.number_input("Max weight",1,10)
             else:
-                min_w, max_w = 1, 1
+                min_w, max_w = 1,1
             if st.button("Generate Graph"):
-                st.session_state.G = generate_random_graph(n, p, directed, weighted, min_w, max_w)
+                st.session_state.G = generate_random_graph(n,p,directed,weighted,min_w,max_w)
         else:
             directed = st.checkbox("Directed")
             weighted = st.checkbox("Weighted")
-            text = st.text_area("Adjacency matrix rows (space-sep)")
+            text = st.text_area("Adj matrix rows (space‐sep)")
             if st.button("Load Graph"):
-                mat = [list(map(float, row.split())) for row in text.splitlines() if row]
-                G = nx.DiGraph() if directed else nx.Graph()
+                mat=[list(map(float,row.split())) for row in text.splitlines() if row]
+                G=nx.DiGraph() if directed else nx.Graph()
                 G.add_nodes_from(range(len(mat)))
-                for i, row in enumerate(mat):
-                    for j, w in enumerate(row):
-                        if w != 0:
-                            G.add_edge(i, j, weight=w)
+                for i,row in enumerate(mat):
+                    for j,w in enumerate(row):
+                        if w!=0: G.add_edge(i,j,weight=w)
                 st.session_state.G = G
 
     G = st.session_state.G
 
     if G:
-        col1, col2 = st.columns(2)
-        with col1:
+        c1,c2 = st.columns(2)
+        with c1:
             st.subheader("Graph")
             draw_graph(G)
-        with col2:
+        with c2:
             st.subheader("Adjacency Matrix")
             show_adjacency(G)
 
         st.subheader("Shortest-Path")
-        algo = st.selectbox("Algorithm", ["Dijkstra", "Improved Dijkstra", "Bellman-Ford", "Floyd-Warshall", "Compare All"])
-        s = st.number_input("Source", min_value=0, max_value=len(G)-1, value=0)
-        t = st.number_input("Target", min_value=0, max_value=len(G)-1, value=1)
+        algo = st.selectbox("Algorithm",["Dijkstra","Improved Dijkstra","Bellman-Ford","Floyd-Warshall","Compare All"])
+        s = st.number_input("Source",0,len(G)-1,0)
+        t = st.number_input("Target",0,len(G)-1,1)
 
-        result_box = st.empty()
+        output = st.empty()
         if st.button("Run"):
-            with result_box:
-                if algo == "Dijkstra":
-                    path, length, tm = safe_dijkstra(G, s, t)
-                    if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
+            with output:
+                if algo=="Dijkstra":
+                    p,l,tm=safe_dijkstra(G,s,t)
+                    if p: st.write(f"Path={p}, Len={l}, Time={tm:.6f}s")
                     else: st.error("No path")
-                elif algo == "Improved Dijkstra":
-                    path, length, tm = safe_improved(G, s, t)
-                    if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
+                elif algo=="Improved Dijkstra":
+                    p,l,tm=safe_improved(G,s,t)
+                    if p: st.write(f"Path={p}, Len={l}, Time={tm:.6f}s")
                     else: st.error("No path")
-                elif algo == "Bellman-Ford":
-                    path, length, tm = safe_bellman(G, s, t)
-                    if path: st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
+                elif algo=="Bellman-Ford":
+                    p,l,tm=safe_bellman(G,s,t)
+                    if p: st.write(f"Path={p}, Len={l}, Time={tm:.6f}s")
                     else: st.error("No path")
-                elif algo == "Floyd-Warshall":
+                elif algo=="Floyd-Warshall":
                     paths, dist, tm = safe_floyd(G)
                     st.write("Distances:")
                     st.dataframe(pd.DataFrame(dist).astype(int))
                     st.write("Paths:")
-                    for u, row in paths.items():
-                        for v, p in row.items():
-                            st.write(f"{u}→{v}: {p}")
+                    for u,row in paths.items():
+                        for v,pth in row.items():
+                            st.write(f"{u}→{v}: {pth}")
                     st.write(f"Time={tm:.6f}s")
-                else:  # Compare All
-                    d_path, d_len, d_tm = safe_dijkstra(G, s, t)
-                    i_path, i_len, i_tm = safe_improved(G, s, t)
-                    b_path, b_len, b_tm = safe_bellman(G, s, t)
-                    paths, dist, f_tm = safe_floyd(G)
-                    f_path = paths[s][t]
-                    f_len = dist[s][t]
+                else:
                     st.write("### Compare All Algorithms")
-                    st.write(f"Dijkstra: Path={d_path}, Len={d_len}, Time={d_tm:.6f}s")
-                    st.write(f"Improved Dijkstra: Path={i_path}, Len={i_len}, Time={i_tm:.6f}s")
-                    st.write(f"Bellman-Ford: Path={b_path}, Len={b_len}, Time={b_tm:.6f}s")
-                    st.write(f"Floyd-Warshall: Path={f_path}, Len={f_len}, Time={f_tm:.6f}s")
+                    d= safe_dijkstra(G,s,t)
+                    i= safe_improved(G,s,t)
+                    b= safe_bellman(G,s,t)
+                    paths,dist,f_tm = safe_floyd(G)
+                    f_path = paths[s][t]; f_len = dist[s][t]
+                    st.write(f"Dijkstra: Time={d[2]:.6f}s Path={d[0]} Len={d[1]}")
+                    st.write(f"Improved Dijkstra: Time={i[2]:.6f}s Path={i[0]} Len={i[1]}")
+                    st.write(f"Bellman-Ford: Time={b[2]:.6f}s Path={b[0]} Len={b[1]}")
+                    st.write(f"Floyd-Warshall: Time={f_tm:.6f}s Path={f_path} Len={f_len}")
     else:
         st.info("Generate or load a graph first.")
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
