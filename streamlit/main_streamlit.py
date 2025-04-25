@@ -21,6 +21,7 @@ def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1
     return G
 
 def draw_graph(G):
+    plt.clf()  # Clear the previous figure
     pos = nx.spring_layout(G)
     if nx.get_edge_attributes(G, 'weight'):
         labels = nx.get_edge_attributes(G, 'weight')
@@ -108,63 +109,24 @@ def improved_dijkstra(G, source, target):
     return path, distances[target]
 
 def find_shortest_path_dijkstra(G, source, target):
-    if nx.has_path(G, source, target):
-        result, elapsed_time = measure_execution_time(nx.dijkstra_path, G, source, target, weight='weight')
-        path_length = nx.dijkstra_path_length(G, source, target, weight='weight')
-        return result, path_length, elapsed_time
-    else:
-        return None, None, None
+    result, elapsed_time = measure_execution_time(nx.dijkstra_path, G, source, target, weight='weight')
+    path_length = nx.dijkstra_path_length(G, source, target, weight='weight')
+    return result, path_length, elapsed_time
 
 def find_shortest_path_improved_dijkstra(G, source, target):
-    if nx.has_path(G, source, target):
-        result, elapsed_time = measure_execution_time(improved_dijkstra, G, source, target)
-        path, length = result
-        return path, length, elapsed_time
-    else:
-        return None, None, None
+    result, elapsed_time = measure_execution_time(improved_dijkstra, G, source, target)
+    path, length = result
+    return path, length, elapsed_time
 
 def find_shortest_path_bellman_ford(G, source, target):
-    if nx.has_path(G, source, target):
-        result, elapsed_time = measure_execution_time(nx.single_source_bellman_ford_path, G, source, weight='weight')
-        path = result[target]
-        path_length = nx.single_source_bellman_ford_path_length(G, source, weight='weight')[target]
-        return path, path_length, elapsed_time
-    else:
-        return None, None, None
+    result, elapsed_time = measure_execution_time(nx.single_source_bellman_ford_path, G, source, weight='weight')
+    path = result[target]
+    path_length = nx.single_source_bellman_ford_path_length(G, source, weight='weight')[target]
+    return path, path_length, elapsed_time
 
 def find_shortest_path_floyd_warshall(G):
     result, elapsed_time = measure_execution_time(nx.floyd_warshall, G, weight='weight')
     return result, elapsed_time
-
-# Compare all algorithms
-def compare_all_algorithms(G, source, target):
-    dijkstra_result, dijkstra_length, dijkstra_time = find_shortest_path_dijkstra(G, source, target)
-    improved_dijkstra_result, improved_dijkstra_length, improved_dijkstra_time = find_shortest_path_improved_dijkstra(G, source, target)
-    bellman_ford_result, bellman_ford_length, bellman_ford_time = find_shortest_path_bellman_ford(G, source, target)
-    floyd_warshall_result, floyd_warshall_time = find_shortest_path_floyd_warshall(G)
-
-    st.write(f"\n--- Dijkstra ---")
-    if dijkstra_result:
-        st.write(f"Path: {dijkstra_result}, Length: {dijkstra_length}, Time: {dijkstra_time:.6f}s")
-    else:
-        st.write("No path found")
-
-    st.write(f"\n--- Improved Dijkstra ---")
-    if improved_dijkstra_result:
-        st.write(f"Path: {improved_dijkstra_result}, Length: {improved_dijkstra_length}, Time: {improved_dijkstra_time:.6f}s")
-    else:
-        st.write("No path found")
-
-    st.write(f"\n--- Bellman-Ford ---")
-    if bellman_ford_result:
-        st.write(f"Path: {bellman_ford_result}, Length: {bellman_ford_length}, Time: {bellman_ford_time:.6f}s")
-    else:
-        st.write("No path found")
-
-    st.write(f"\n--- Floyd-Warshall ---")
-    if floyd_warshall_result:
-        st.write(f"All Pairs Shortest Paths: {floyd_warshall_result}")
-    st.write(f"Time: {floyd_warshall_time:.6f}s")
 
 # Algorithm selection
 def select_shortest_path_algorithm(G):
@@ -189,6 +151,18 @@ def select_shortest_path_algorithm(G):
         st.write(f"Time: {time_elapsed:.6f}s")
     elif algorithm_choice == "Compare All":
         compare_all_algorithms(G, source, target)
+
+def compare_all_algorithms(G, source, target):
+    st.write("\n--- Comparison of All Algorithms ---")
+    algorithms = {
+        "Dijkstra": find_shortest_path_dijkstra,
+        "Improved Dijkstra": find_shortest_path_improved_dijkstra,
+        "Bellman-Ford": find_shortest_path_bellman_ford
+    }
+    
+    for name, algo in algorithms.items():
+        path, length, time_elapsed = algo(G, source, target)
+        st.write(f"{name}: Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
 
 def main():
     # Initialize session state for graph if not already done
