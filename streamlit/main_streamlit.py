@@ -161,31 +161,38 @@ def find_shortest_path_floyd_warshall(G):
     st.write(f"Execution Time: {elapsed_time:.6f} seconds")
 
 # Algorithm selection
-def select_shortest_path_algorithm(G):
-    st.write("\n--- Select a Shortest Path Algorithm ---")
-    algorithm = st.selectbox("Choose the algorithm", ["Dijkstra's Algorithm", "Improved Dijkstra's Algorithm", "Bellman-Ford Algorithm", "Floyd-Warshall Algorithm"])
+def select_shortest_path_algorithm():
+    """
+    Allows the user to select a shortest path algorithm without regenerating the graph.
+    """
+    st.write("--- Shortest Path Algorithm Menu ---")
+    algorithm_choice = st.selectbox("Choose an algorithm", ["Dijkstra", "Improved Dijkstra", "Bellman-Ford", "Floyd-Warshall"])
     
-    if algorithm == "Dijkstra's Algorithm":
-        find_shortest_path_dijkstra(G)
-    elif algorithm == "Improved Dijkstra's Algorithm":
-        find_shortest_path_improved_dijkstra(G)
-    elif algorithm == "Bellman-Ford Algorithm":
-        find_shortest_path_bellman_ford(G)
-    elif algorithm == "Floyd-Warshall Algorithm":
-        find_shortest_path_floyd_warshall(G)
+    if algorithm_choice == "Dijkstra":
+        find_shortest_path_dijkstra(st.session_state.graph)
+    elif algorithm_choice == "Improved Dijkstra":
+        find_shortest_path_improved_dijkstra(st.session_state.graph)
+    elif algorithm_choice == "Bellman-Ford":
+        find_shortest_path_bellman_ford(st.session_state.graph)
+    elif algorithm_choice == "Floyd-Warshall":
+        find_shortest_path_floyd_warshall(st.session_state.graph)
 
-# Main function to interact with Streamlit
 def main():
-    st.title("Graph Generator and Shortest Path Finder")
+    if 'graph' not in st.session_state:
+        st.session_state.graph = None
 
-    graph_choice = st.radio("Do you want a random or user-defined graph?", ("Random", "User-defined"))
+    st.write("--- Graph Generator and Shortest Path Finder ---")
+    
+    graph_choice = st.radio("Do you want a random or user-defined graph?", ("random", "user-defined"))
 
-    if graph_choice == "Random":
-        G = handle_random_graph()  # Generate random graph
-    elif graph_choice == "User-defined":
-        G = handle_user_defined_graph()  # Generate user-defined graph
+    if graph_choice == "random":
+        if not st.session_state.graph:
+            st.session_state.graph = handle_random_graph()
+    elif graph_choice == "user-defined":
+        if not st.session_state.graph:
+            st.session_state.graph = handle_user_defined_graph()
 
-    select_shortest_path_algorithm(G)  # Select and run the algorithm
+    select_shortest_path_algorithm()
 
 if __name__ == "__main__":
     main()
