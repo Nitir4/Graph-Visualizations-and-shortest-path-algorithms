@@ -8,6 +8,7 @@ def measure_execution_time(func, *args, **kwargs):
     elapsed_time = time.time() - start_time
     return result, elapsed_time
 
+
 def calculate_theoretical_time(V, E, algo_name):
     if algo_name == "Dijkstra" or algo_name == "Improved Dijkstra":
         operations = (V + E) * math.log2(V)
