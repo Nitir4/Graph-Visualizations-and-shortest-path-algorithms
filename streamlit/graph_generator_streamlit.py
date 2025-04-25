@@ -1,9 +1,7 @@
-import streamlit as st
 import networkx as nx
-import matplotlib.pyplot as plt
 import random
-
-# ----------- GRAPH GENERATION -----------
+import matplotlib.pyplot as plt
+import streamlit as st
 
 def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1, max_weight=10):
     G = nx.DiGraph() if directed else nx.Graph()
@@ -21,73 +19,60 @@ def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1
 
 def draw_graph(G):
     pos = nx.spring_layout(G)
-    plt.figure(figsize=(6, 4))
     if nx.get_edge_attributes(G, 'weight'):
         labels = nx.get_edge_attributes(G, 'weight')
         nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
         nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     else:
         nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
-    st.pyplot(plt)
-
-def print_adjacency_matrix(G):
-    adj_matrix = nx.adjacency_matrix(G).todense()
-    st.subheader("Adjacency Matrix")
-    st.dataframe(adj_matrix)
-
-# ----------- STREAMLIT UI HANDLERS -----------
+    plt.show()
 
 def handle_random_graph():
-    st.subheader("🎲 Generate Random Graph")
-    num_nodes = st.slider("Number of nodes", min_value=2, max_value=30, value=6)
-    edge_prob = st.slider("Edge creation probability", 0.0, 1.0, 0.3)
-    directed = st.checkbox("Directed graph?")
-    weighted = st.checkbox("Weighted graph?")
-    min_weight = 1
-    max_weight = 10
-
+    st.title("Random Graph Generation")
+    num_nodes = st.number_input("Enter the number of nodes", min_value=2, max_value=100, value=10)
+    edge_prob = st.slider("Enter the edge creation probability", min_value=0.0, max_value=1.0, value=0.2)
+    directed = st.checkbox("Should the graph be directed?")
+    weighted = st.checkbox("Should the graph be weighted?")
+    
     if weighted:
-        col1, col2 = st.columns(2)
-        min_weight = col1.number_input("Min edge weight", min_value=1, max_value=100, value=1)
-        max_weight = col2.number_input("Max edge weight", min_value=1, max_value=100, value=10)
-
-    if st.button("Generate Graph"):
+        min_weight = st.number_input("Enter the minimum weight", min_value=1, value=1)
+        max_weight = st.number_input("Enter the maximum weight", min_value=1, value=10)
         G = generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight, max_weight)
-        print_adjacency_matrix(G)
-        draw_graph(G)
-        return G
+    else:
+        G = generate_random_graph(num_nodes, edge_prob, directed, weighted)
+    
+    st.subheader("Adjacency Matrix:")
+    adj_matrix = nx.adjacency_matrix(G).todense()
+    st.write(adj_matrix)
+    
+    st.subheader("Graph Visualization:")
+    draw_graph(G)
+    return G
 
 def handle_user_defined_graph():
-    st.subheader("📝 Define Graph from Adjacency Matrix")
-    directed = st.checkbox("Directed?", key="dir_user")
-    weighted = st.checkbox("Weighted?", key="weight_user")
-    num_nodes = st.number_input("Number of nodes", min_value=2, max_value=20, value=4, step=1)
-
+    st.title("User Defined Graph")
+    directed = st.checkbox("Should the graph be directed?")
+    weighted = st.checkbox("Should the graph be weighted?")
+    num_nodes = st.number_input("Enter the number of nodes", min_value=2, max_value=100, value=5)
+    
     G = nx.DiGraph() if directed else nx.Graph()
-    G.add_nodes_from(range(int(num_nodes)))
-
-    st.markdown("Enter values row-by-row (space-separated):")
-    matrix_input = []
-    for i in range(int(num_nodes)):
-        row = st.text_input(f"Row {i+1}", key=f"row_{i}")
-        matrix_input.append(row)
-
-    if st.button("Build Graph"):
-        try:
-            for i, row in enumerate(matrix_input):
-                weights = list(map(float, row.strip().split()))
-                if len(weights) != num_nodes:
-                    st.error(f"Row {i+1} must have {num_nodes} values.")
-                    return None
-                for j, val in enumerate(weights):
-                    if val != 0:
-                        if weighted:
-                            G.add_edge(i, j, weight=val)
-                        else:
-                            G.add_edge(i, j)
-            print_adjacency_matrix(G)
-            draw_graph(G)
-            return G
-        except Exception as e:
-            st.error(f"Error parsing matrix: {e}")
-            return None
+    G.add_nodes_from(range(num_nodes))
+    
+    adj_matrix_str = st.text_area("Enter the adjacency matrix row by row (space-separated values):", height=200)
+    rows = adj_matrix_str.strip().split("\n")
+    for i, row in enumerate(rows):
+        weights = list(map(float, row.strip().split()))
+        for j, weight in enumerate(weights):
+            if weight != 0:
+                if weighted:
+                    G.add_edge(i, j, weight=weight)
+                else:
+                    G.add_edge(i, j)
+    
+    st.subheader("Adjacency Matrix:")
+    adj_matrix = nx.adjacency_matrix(G).todense()
+    st.write(adj_matrix)
+    
+    st.subheader("Graph Visualization:")
+    draw_graph(G)
+    return G
