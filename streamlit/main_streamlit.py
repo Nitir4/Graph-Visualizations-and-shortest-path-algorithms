@@ -24,7 +24,8 @@ def draw_graph(G):
     pos = nx.spring_layout(G, seed=42)
     nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray")
     if nx.get_edge_attributes(G,'weight'):
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G,'weight'))
+        nx.draw_networkx_edge_labels(G, pos,
+            edge_labels=nx.get_edge_attributes(G,'weight'))
     st.pyplot(plt)
 
 def show_adjacency(G):
@@ -84,22 +85,9 @@ def safe_bellman(G, s, t):
         return None, None, 0.0
 
 def safe_floyd_all(G):
-    (pred, dist), tm = measure(nx.floyd_warshall_predecessor_and_distance, G, weight='weight')
-    # build all-pairs paths
-    paths = {u:{} for u in G.nodes()}
-    for u in G.nodes():
-        for v in G.nodes():
-            if u==v:
-                paths[u][v] = [u]
-            elif v not in pred[u]:
-                paths[u][v] = None
-            else:
-                p=[v]
-                while p[-1] != u:
-                    p.append(pred[u][p[-1]])
-                paths[u][v] = list(reversed(p))
-    plain_dist = {u: dict(dist[u]) for u in dist}
-    return paths, plain_dist, tm
+    dist, tm = measure(nx.floyd_warshall, G, weight="weight")
+    paths = dict(nx.all_pairs_dijkstra_path(G, weight="weight"))
+    return paths, dist, tm
 
 def safe_floyd_single(G, s, t):
     paths, dist, tm = safe_floyd_all(G)
@@ -142,7 +130,8 @@ def main():
 
     G = st.session_state.G
     if G is None:
-        st.info("Generate or load a graph first."); return
+        st.info("Generate or load a graph first.")
+        return
 
     c1,c2 = st.columns(2)
     with c1:
@@ -151,7 +140,7 @@ def main():
         st.subheader("Adjacency Matrix"); show_adjacency(G)
 
     st.subheader("Shortest-Path")
-    algo = st.selectbox("Algorithm",["Dijkstra","Improved","Bellman-Ford","Floyd-Warshall","Compare All"])
+    algo = st.selectbox("Algorithm",["Dijkstra","Improved Dijkstra","Bellman-Ford","Floyd-Warshall","Compare All"])
     s = st.number_input("Source",0,len(G)-1,0)
     t = st.number_input("Target",0,len(G)-1,1)
 
@@ -160,7 +149,7 @@ def main():
             p,l,tm = safe_dijkstra(G,s,t)
             if p: st.write(f"Path={p}, Len={l}, Time={tm:.6f}s")
             else: st.error("No path")
-        elif algo=="Improved":
+        elif algo=="Improved Dijkstra":
             p,l,tm = safe_improved(G,s,t)
             if p: st.write(f"Path={p}, Len={l}, Time={tm:.6f}s")
             else: st.error("No path")
@@ -176,16 +165,16 @@ def main():
                 for v,pth in row.items():
                     st.write(f"{u}→{v}: {pth}")
             st.write(f"Time={tm:.6f}s")
-        else:  # Compare All
+        else:
             d = safe_dijkstra(G,s,t)
             i = safe_improved(G,s,t)
             b = safe_bellman(G,s,t)
             f_p,f_l,f_tm = safe_floyd_single(G,s,t)
             st.write("### Compare All Algorithms")
-            st.write(f"Dijkstra: Time={d[2]:.6f}s  Path={d[0]}  Len={d[1]}")
-            st.write(f"Improved: Time={i[2]:.6f}s  Path={i[0]}  Len={i[1]}")
-            st.write(f"Bellman-Ford: Time={b[2]:.6f}s  Path={b[0]}  Len={b[1]}")
-            st.write(f"Floyd-W: Time={f_tm:.6f}s  Path={f_p}  Len={f_l}")
+            st.write(f"Dijkstra: Time={d[2]:.6f}s Path={d[0]} Len={d[1]}")
+            st.write(f"Improved Dijkstra: Time={i[2]:.6f}s Path={i[0]} Len={i[1]}")
+            st.write(f"Bellman-Ford: Time={b[2]:.6f}s Path={b[0]} Len={b[1]}")
+            st.write(f"Floyd-Warshall: Time={f_tm:.6f}s Path={f_p} Len={f_l}")
 
 if __name__=="__main__":
     main()
