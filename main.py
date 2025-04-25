@@ -1,7 +1,4 @@
 def select_shortest_path_algorithm(G):
-    """
-    Presents a menu to the user to choose a shortest path algorithm.
-    """
     while True:
         print("\n--- Shortest Path Algorithm Menu ---")
         print("1. Dijkstra's Algorithm")
@@ -12,7 +9,6 @@ def select_shortest_path_algorithm(G):
         print("6. Exit")
 
         choice = int(input("Enter your choice (1-6): "))
-
         if choice == 1:
             find_shortest_path_dijkstra(G)
         elif choice == 2:
@@ -29,9 +25,6 @@ def select_shortest_path_algorithm(G):
             print("Invalid choice. Please try again.")
 
 def main():
-    """
-    Entry point of the program. Handles graph input and shortest path analysis.
-    """
     print("--- Graph Generator and Shortest Path Finder ---")
     while True:
         graph_choice = input("Do you want a random or user-defined graph? (random/user-defined/exit): ").strip().lower()
@@ -45,6 +38,3 @@ def main():
             break
         else:
             print("Invalid choice.")
-
-if __name__ == "__main__":
-    main()
