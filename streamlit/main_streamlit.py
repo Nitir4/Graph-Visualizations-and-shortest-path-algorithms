@@ -192,6 +192,13 @@ def main():
     elif graph_choice == "user-defined" and st.session_state.graph is None:
         st.session_state.graph = handle_user_defined_graph()
 
+    # Always show the selected graph and its adjacency matrix if it exists
+    if st.session_state.graph:
+        st.write("--- Graph Display ---")
+        draw_graph(st.session_state.graph)
+        st.write("--- Adjacency Matrix ---")
+        print_adjacency_matrix(st.session_state.graph)
+
     select_shortest_path_algorithm()
 
 if __name__ == "__main__":
