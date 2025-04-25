@@ -175,13 +175,18 @@ def select_shortest_path_algorithm(G):
     target = st.number_input("Enter the target node:", min_value=0)
 
     if algorithm_choice == "Dijkstra":
-        find_shortest_path_dijkstra(G, source, target)
+        path, length, time_elapsed = find_shortest_path_dijkstra(G, source, target)
+        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
     elif algorithm_choice == "Improved Dijkstra":
-        find_shortest_path_improved_dijkstra(G, source, target)
+        path, length, time_elapsed = find_shortest_path_improved_dijkstra(G, source, target)
+        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
     elif algorithm_choice == "Bellman-Ford":
-        find_shortest_path_bellman_ford(G, source, target)
+        path, length, time_elapsed = find_shortest_path_bellman_ford(G, source, target)
+        st.write(f"Path: {path}, Length: {length}, Time: {time_elapsed:.6f}s")
     elif algorithm_choice == "Floyd-Warshall":
-        find_shortest_path_floyd_warshall(G)
+        result, time_elapsed = find_shortest_path_floyd_warshall(G)
+        st.write(f"All Pairs Shortest Paths: {result}")
+        st.write(f"Time: {time_elapsed:.6f}s")
     elif algorithm_choice == "Compare All":
         compare_all_algorithms(G, source, target)
 
