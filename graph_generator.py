@@ -1,16 +1,8 @@
 import random
-import time
 import networkx as nx
 import matplotlib.pyplot as plt
-import heapq
-import math
-
-# ----------- GRAPH GENERATION & DISPLAY -----------
 
 def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1, max_weight=10):
-    """
-    Generates a random graph with the specified parameters.
-    """
     G = nx.DiGraph() if directed else nx.Graph()
     for i in range(num_nodes):
         G.add_node(i)
@@ -25,9 +17,6 @@ def generate_random_graph(num_nodes, edge_prob, directed, weighted, min_weight=1
     return G
 
 def draw_graph(G):
-    """
-    Draws the graph using matplotlib and NetworkX spring layout.
-    """
     pos = nx.spring_layout(G)
     if nx.get_edge_attributes(G, 'weight'):
         labels = nx.get_edge_attributes(G, 'weight')
@@ -38,19 +27,11 @@ def draw_graph(G):
     plt.show()
 
 def print_adjacency_matrix(G):
-    """
-    Prints the adjacency matrix of the graph.
-    """
     adj_matrix = nx.adjacency_matrix(G).todense()
     print("Adjacency Matrix:")
     print(adj_matrix)
 
-# ----------- USER INPUT HANDLERS -----------
-
 def handle_random_graph():
-    """
-    Prompts user for parameters and creates a random graph.
-    """
     num_nodes = int(input("Enter the number of nodes: "))
     edge_prob = float(input("Enter the edge creation probability (0-1): "))
     directed = input("Should the graph be directed? (yes/no): ").strip().lower() == "yes"
@@ -69,9 +50,6 @@ def handle_random_graph():
     return G
 
 def handle_user_defined_graph():
-    """
-    Takes an adjacency matrix input from the user and creates a graph.
-    """
     directed = input("Should the graph be directed? (yes/no): ").strip().lower() == "yes"
     weighted = input("Should the graph be weighted? (yes/no): ").strip().lower() == "yes"
     num_nodes = int(input("Enter the number of nodes: "))
@@ -93,4 +71,3 @@ def handle_user_defined_graph():
     print_adjacency_matrix(G)
     draw_graph(G)
     return G
-
