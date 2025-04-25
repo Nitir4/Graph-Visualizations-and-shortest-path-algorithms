@@ -8,6 +8,7 @@ import streamlit as st
 
 st.set_page_config(layout="wide")
 
+# ─── Graph generation ──────────────────────────────────────────────────────────
 def generate_random_graph(n, p, directed, weighted, min_w, max_w):
     G = nx.DiGraph() if directed else nx.Graph()
     G.add_nodes_from(range(n))
@@ -22,14 +23,15 @@ def draw_graph(G):
     plt.clf()
     pos = nx.spring_layout(G, seed=42)
     nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray")
-    if nx.get_edge_attributes(G, "weight"):
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
+    if nx.get_edge_attributes(G, 'weight'):
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, 'weight'))
     st.pyplot(plt)
 
 def show_adjacency(G):
     mat = nx.adjacency_matrix(G, weight="weight").todense()
     st.write(mat)
 
+# ─── Shortest-path helpers ─────────────────────────────────────────────────────
 def measure(func, *args, **kwargs):
     start = time.time()
     out = func(*args, **kwargs)
@@ -86,12 +88,14 @@ def improved_dijkstra(G, source, target):
         u = prev[u]
     return list(reversed(path)), dist[target]
 
+# ─── Streamlit UI ──────────────────────────────────────────────────────────────
 def main():
     st.title("Graph & Shortest-Path Visualizer")
 
     if "G" not in st.session_state:
         st.session_state.G = None
 
+    # Sidebar controls
     with st.sidebar:
         kind = st.radio("Graph type", ["Random", "User-Defined"])
         if kind == "Random":
@@ -136,36 +140,49 @@ def main():
         algo = st.selectbox("Algorithm", ["Dijkstra", "Improved", "Bellman-Ford", "Floyd-Warshall", "Compare All"])
         s = st.number_input("Source", 0, len(G) - 1, 0)
         t = st.number_input("Target", 0, len(G) - 1, 1)
+
+        # placeholder for results, clears on each Run
+        result_box = st.empty()
         if st.button("Run"):
-            if algo == "Dijkstra":
-                path, length, tm = safe_dijkstra(G, s, t)
-                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
-            elif algo == "Improved":
-                path, length, tm = safe_improved(G, s, t)
-                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
-            elif algo == "Bellman-Ford":
-                path, length, tm = safe_bellman(G, s, t)
-                path and st.write(f"Path={path}, Len={length}, Time={tm:.6f}s") or st.error("No path")
-            elif algo == "Floyd-Warshall":
-                dist, tm = safe_floyd(G, s, t)
-                df = pd.DataFrame(dist).astype(int)
-                st.write("All-pairs distances:")
-                st.dataframe(df)
-                st.write(f"Time={tm:.6f}s")
-            else:
-                st.write("### Compare All")
-                for name, fn in [
-                    ("Dijkstra", safe_dijkstra),
-                    ("Improved", safe_improved),
-                    ("Bellman-Ford", safe_bellman),
-                    ("Floyd-Warshall", safe_floyd),
-                ]:
-                    if name == "Floyd-Warshall":
-                        dist, tm = fn(G, s, t)
-                        st.write(f"**{name}** time={tm:.6f}s")
+            with result_box:
+                if algo == "Dijkstra":
+                    path, length, tm = safe_dijkstra(G, s, t)
+                    if path:
+                        st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
                     else:
-                        path, length, tm = fn(G, s, t)
-                        st.write(f"**{name}**: Path={path}, Len={length}, Time={tm:.6f}s")
+                        st.error("No path")
+                elif algo == "Improved":
+                    path, length, tm = safe_improved(G, s, t)
+                    if path:
+                        st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
+                    else:
+                        st.error("No path")
+                elif algo == "Bellman-Ford":
+                    path, length, tm = safe_bellman(G, s, t)
+                    if path:
+                        st.write(f"Path={path}, Len={length}, Time={tm:.6f}s")
+                    else:
+                        st.error("No path")
+                elif algo == "Floyd-Warshall":
+                    dist, tm = safe_floyd(G, s, t)
+                    df = pd.DataFrame(dist).astype(int)
+                    st.write("All-pairs distances:")
+                    st.dataframe(df)
+                    st.write(f"Time={tm:.6f}s")
+                else:
+                    st.write("### Compare All")
+                    for name, fn in [
+                        ("Dijkstra", safe_dijkstra),
+                        ("Improved", safe_improved),
+                        ("Bellman-Ford", safe_bellman),
+                        ("Floyd-Warshall", safe_floyd),
+                    ]:
+                        if name == "Floyd-Warshall":
+                            dist, tm = fn(G, s, t)
+                            st.write(f"**{name}** time={tm:.6f}s")
+                        else:
+                            path, length, tm = fn(G, s, t)
+                            st.write(f"**{name}**: Path={path}, Len={length}, Time={tm:.6f}s")
     else:
         st.info("Generate or load a graph first.")
 
